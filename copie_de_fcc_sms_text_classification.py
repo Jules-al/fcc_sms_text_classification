@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 print(tf.__version__)
 
-# get data files
+# Télechargement des fichiers de données 
 !wget https://cdn.freecodecamp.org/project-data/sms/train-data.tsv
 !wget https://cdn.freecodecamp.org/project-data/sms/valid-data.tsv
 
@@ -26,24 +26,30 @@ train_file_path = "train-data.tsv"
 test_file_path = "valid-data.tsv"
 
 train_df = pd.read_csv(test_file_path, sep="\t", header=None, names=["type", "msg"])
+#Suppression des valeurs marquantes
 train_df.dropna()
+#Apercu des données d'entrainement
 train_df.head()
 
 test_df = pd.read_csv(test_file_path, sep="\t", header=None, names=["type", "msg"])
+#Suppression des valeurs marquantes
 test_df.dropna()
-train_df.head()
-
+#Apercu des données de test
+test_df.head()
+#Attribution des codes d'entiers uniques 
 train_df["type"] = pd.factorize(train_df["type"])[0]
 test_df["type"] = pd.factorize(test_df["type"])[0]
 
 train_df.head()
-
+#Preparation des données pour le modèle d'entrainement 
 train_labels =  train_df["type"].values
+#creation d'une séquence de tranches à partir de tenseurs, prend une valeur de la colonne msg et l'assigne à un label
 train_ds = tf.data.Dataset.from_tensor_slices(
     (train_df["msg"].values, train_labels)
 )
 
 test_labels =  test_df["type"].values
+#creation d'une séquence de tranches à partir de tenseurs, prend une valeur de la colonne msg et l'assigne à un label
 test_ds = tf.data.Dataset.from_tensor_slices(
     (test_df["msg"].values, test_labels)
 )
@@ -53,8 +59,9 @@ BUFFER_SIZE = 100
 BATCH_SIZE = 32
 train_ds = train_ds.shuffle(BUFFER_SIZE).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 test_ds = test_ds.batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
-
+#vectorization du texte : conversion du texte en représentation numérique
 from tensorflow.keras.layers.experimental.preprocessing import TextVectorization
+#Création instance de la classe avec les paamètres respectifs
 vec = TextVectorization(
     output_mode='int',
     max_tokens=1000,
@@ -66,7 +73,7 @@ vec.adapt(train_ds.map(lambda text, label: text))
 vocab = np.array(vec.get_vocabulary())
 vocab[:20]
 
-#create model
+#Creation du modèle
 model = tf.keras.Sequential([
     vec,
     tf.keras.layers.Embedding(
@@ -88,7 +95,7 @@ model.compile(
     metrics=['accuracy'],
 )
 
-#Train the model against our data sets
+#Entrainement du modèle
 history = model.fit(
     train_ds,
     validation_data=test_ds,
@@ -123,8 +130,8 @@ print(h['val_accuracy'])
 
 
 
-# function to predict messages based on model
-# (should return list containing prediction and label, ex. [0.008318834938108921, 'ham'])
+# fonction prediction du message
+# retourne une liste contenant la prediction et le message, ex. [0.008318834938108921, 'ham'])
 def predict_message(pred_text):
     ps = model.predict([pred_text])
     print(ps)
